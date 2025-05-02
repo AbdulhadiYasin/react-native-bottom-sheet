@@ -86,13 +86,19 @@ export function createBottomSheetScrollableComponent<T, P>(
     );
 
     const scrollableGesture = useMemo(
-      () =>
-        draggableGesture
+      () => {
+        const _simGesture = (props as any).simultaneousHandlers;
+        const simGestures = _simGesture !== undefined && _simGesture !== null ? (Array.isArray(_simGesture) ? _simGesture.map(g => g.current) : [_simGesture.current]) : [];
+        const gesture = draggableGesture
           ? Gesture.Native()
               // @ts-ignore
-              .simultaneousWithExternalGesture(draggableGesture)
+              .simultaneousWithExternalGesture(...[draggableGesture, ...simGestures])
               .shouldCancelWhenOutside(false)
-          : undefined,
+          : undefined;
+
+        rest && rest.onScrollableGesture && typeof rest.onScrollableGesture === 'function' && rest.onScrollableGesture(draggableGesture, gesture);
+        return gesture;
+      },
       [draggableGesture]
     );
     //#endregion
@@ -159,6 +165,7 @@ export function createBottomSheetScrollableComponent<T, P>(
         ScrollableComponent={ScrollableComponent}
         refreshControl={refreshControl}
         {...rest}
+        scrollToOverflowEnabled={true}
       />
     );
     //#endregion
